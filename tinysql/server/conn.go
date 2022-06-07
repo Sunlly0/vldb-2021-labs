@@ -599,7 +599,9 @@ func (cc *clientConn) Run(ctx context.Context) {
 
 		// Hint: step I.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		// panic("YOUR CODE HERE")
+		err = cc.dispatch(ctx, data)
+		//
 		if err != nil {
 			if terror.ErrorEqual(err, io.EOF) {
 
@@ -949,7 +951,9 @@ func (cc *clientConn) writeChunks(ctx context.Context, rs ResultSet, binary bool
 		// Here server.tidbResultSet implements Next method.
 		// Hint: step I.4.4
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		// panic("YOUR CODE HERE")
+		err = rs.Next(ctx, req)
+		//
 		if err != nil {
 			return err
 		}

@@ -361,9 +361,9 @@ func getReorgInfo(d *ddlCtx, t *meta.Meta, job *model.Job, tbl table.Table) (*re
 		}
 		logutil.BgLogger().Info("[ddl] job get table range", zap.Int64("jobID", job.ID), zap.Int64("physicalTableID", pid), zap.Int64("startHandle", start), zap.Int64("endHandle", end))
 
-		if _, ok := failpoint.Eval(_curpkg_("errorUpdateReorgHandle")); ok {
+		failpoint.Inject("errorUpdateReorgHandle", func() (*reorgInfo, error) {
 			return &info, errors.New("occur an error when update reorg handle")
-		}
+		})
 		err = t.UpdateDDLReorgHandle(job, start, end, pid)
 		if err != nil {
 			return &info, errors.Trace(err)

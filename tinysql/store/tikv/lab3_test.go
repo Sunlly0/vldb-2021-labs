@@ -422,6 +422,7 @@ func (s *testLab3Suite) TestFailAfterPrimary(c *C) {
 	}()
 
 	txn := s.begin(c)
+	// fmt.Print("begin")
 
 	k1 := []byte("a")
 	v1 := []byte("a")

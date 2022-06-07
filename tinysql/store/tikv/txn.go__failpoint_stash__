@@ -159,18 +159,17 @@ func (txn *tikvTxn) DelOption(opt kv.Option) {
 //			4.2. Commit phase
 //			4.3. Cleanup phase if transaction is failed
 func (txn *tikvTxn) Commit(ctx context.Context) error {
-	fmt.Println("begin Commit:")
 	if !txn.valid {
 		return kv.ErrInvalidTxn
 	}
 	defer txn.close()
 
-	if val, ok := failpoint.Eval(_curpkg_("mockCommitError")); ok {
+	failpoint.Inject("mockCommitError", func(val failpoint.Value) {
 		if val.(bool) && kv.IsMockCommitErrorEnable() {
 			kv.MockCommitErrorDisable()
-			return errors.New("mock commit error")
+			failpoint.Return(errors.New("mock commit error"))
 		}
-	}
+	})
 
 	// connID is used for log.
 	var connID uint64

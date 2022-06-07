@@ -15,6 +15,7 @@ package tikv
 
 import (
 	"context"
+	"fmt"
 	"math"
 	"math/rand"
 	"strings"
@@ -105,6 +106,7 @@ func (s *testCommitterSuite) TestCommitRollback(c *C) {
 		"b": "b",
 		"c": "c",
 	})
+	fmt.Println("*after mustCommit")
 
 	txn := s.begin(c)
 	txn.Set([]byte("a"), []byte("a1"))

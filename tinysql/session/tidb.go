@@ -228,7 +228,10 @@ func runStmt(ctx context.Context, sctx sessionctx.Context, s sqlexec.Statement) 
 
 	// Hint: step I.3.3
 	// YOUR CODE HERE (lab4)
-	panic("YOUR CODE HERE")
+	// panic("YOUR CODE HERE")
+	rs, err = s.Exec(ctx)
+	//
+
 	sessVars.TxnCtx.StatementCount++
 	if !s.IsReadOnly() {
 		// Handle the stmt commit/rollback.

@@ -214,11 +214,11 @@ func (cc *clientConn) readPacket() ([]byte, error) {
 }
 
 func (cc *clientConn) writePacket(data []byte) error {
-	if _, ok := failpoint.Eval(_curpkg_("FakeClientConn")); ok {
+	failpoint.Inject("FakeClientConn", func() {
 		if cc.pkt == nil {
-			return nil
+			failpoint.Return(nil)
 		}
-	}
+	})
 	return cc.pkt.writePacket(data)
 }
 
@@ -698,9 +698,7 @@ func (cc *clientConn) dispatch(ctx context.Context, data []byte) error {
 		var err error
 		// Hint: step I.2
 		// YOUR CODE HERE (lab4)
-		// panic("YOUR CODE HERE")
-		err = cc.handleQuery(ctx, dataStr)
-		//
+		panic("YOUR CODE HERE")
 		return err
 	case mysql.ComPing:
 		return cc.writeOK()
@@ -728,11 +726,11 @@ func (cc *clientConn) useDB(ctx context.Context, db string) (err error) {
 }
 
 func (cc *clientConn) flush() error {
-	if _, ok := failpoint.Eval(_curpkg_("FakeClientConn")); ok {
+	failpoint.Inject("FakeClientConn", func() {
 		if cc.pkt == nil {
-			return nil
+			failpoint.Return(nil)
 		}
-	}
+	})
 	return cc.pkt.flush()
 }
 
@@ -830,9 +828,8 @@ func (cc *clientConn) handleQuery(ctx context.Context, sql string) (err error) {
 	var rss []ResultSet
 	// Hint: step I.3
 	// YOUR CODE HERE (lab4)
-	// panic("YOUR CODE HERE")
-	rss, err = cc.ctx.Execute(ctx, sql)
-	//
+	panic("YOUR CODE HERE")
+
 	if err != nil {
 		return err
 	}

@@ -262,11 +262,11 @@ func (do *Domain) GetScope(status string) variable.ScopeFlag {
 // Reload reloads InfoSchema.
 // It's public in order to do the test.
 func (do *Domain) Reload() error {
-	if val, ok := failpoint.Eval(_curpkg_("ErrorMockReloadFailed")); ok {
+	failpoint.Inject("ErrorMockReloadFailed", func(val failpoint.Value) {
 		if val.(bool) {
-			return errors.New("mock reload failed")
+			failpoint.Return(errors.New("mock reload failed"))
 		}
-	}
+	})
 
 	// Lock here for only once at the same time.
 	do.m.Lock()
@@ -517,14 +517,14 @@ func (do *Domain) Init(ddlLease time.Duration, sysFactory func(*Domain) (pools.R
 		ddl.WithLease(ddlLease),
 		ddl.WithResourcePool(sysCtxPool),
 	)
-	if val, ok := failpoint.Eval(_curpkg_("MockReplaceDDL")); ok {
+	failpoint.Inject("MockReplaceDDL", func(val failpoint.Value) {
 		if val.(bool) {
 			if err := do.ddl.Stop(); err != nil {
 				logutil.BgLogger().Error("stop DDL failed", zap.Error(err))
 			}
 			do.ddl = d
 		}
-	}
+	})
 
 	err := do.ddl.SchemaSyncer().Init(ctx)
 	if err != nil {

@@ -424,14 +424,14 @@ func (c *RPCClient) SendRequest(ctx context.Context, addr string, req *tikvrpc.R
 		resp.Resp = handler.handleKvScan(r)
 
 	case tikvrpc.CmdPrewrite:
-		if val, ok := failpoint.Eval(_curpkg_("rpcPrewriteResult")); ok {
+		failpoint.Inject("rpcPrewriteResult", func(val failpoint.Value) {
 			switch val.(string) {
 			case "notLeader":
-				return &tikvrpc.Response{
+				failpoint.Return(&tikvrpc.Response{
 					Resp: &kvrpcpb.PrewriteResponse{RegionError: &errorpb.Error{NotLeader: &errorpb.NotLeader{}}},
-				}, nil
+				}, nil)
 			}
-		}
+		})
 
 		r := req.Prewrite()
 		if err := handler.checkRequest(reqCtx, r.Size()); err != nil {
@@ -440,20 +440,20 @@ func (c *RPCClient) SendRequest(ctx context.Context, addr string, req *tikvrpc.R
 		}
 		resp.Resp = handler.handleKvPrewrite(r)
 	case tikvrpc.CmdCommit:
-		if val, ok := failpoint.Eval(_curpkg_("rpcCommitResult")); ok {
+		failpoint.Inject("rpcCommitResult", func(val failpoint.Value) {
 			switch val.(string) {
 			case "timeout":
-				return nil, errors.New("timeout")
+				failpoint.Return(nil, errors.New("timeout"))
 			case "notLeader":
-				return &tikvrpc.Response{
+				failpoint.Return(&tikvrpc.Response{
 					Resp: &kvrpcpb.CommitResponse{RegionError: &errorpb.Error{NotLeader: &errorpb.NotLeader{}}},
-				}, nil
+				}, nil)
 			case "keyError":
-				return &tikvrpc.Response{
+				failpoint.Return(&tikvrpc.Response{
 					Resp: &kvrpcpb.CommitResponse{Error: &kvrpcpb.KeyError{}},
-				}, nil
+				}, nil)
 			}
-		}
+		})
 
 		r := req.Commit()
 		if err := handler.checkRequest(reqCtx, r.Size()); err != nil {
@@ -461,11 +461,11 @@ func (c *RPCClient) SendRequest(ctx context.Context, addr string, req *tikvrpc.R
 			return resp, nil
 		}
 		resp.Resp = handler.handleKvCommit(r)
-		if val, ok := failpoint.Eval(_curpkg_("rpcCommitTimeout")); ok {
+		failpoint.Inject("rpcCommitTimeout", func(val failpoint.Value) {
 			if val.(bool) {
-				return nil, undeterminedErr
+				failpoint.Return(nil, undeterminedErr)
 			}
-		}
+		})
 	case tikvrpc.CmdCheckTxnStatus:
 		r := req.CheckTxnStatus()
 		if err := handler.checkRequest(reqCtx, r.Size()); err != nil {

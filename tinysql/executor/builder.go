@@ -249,7 +249,10 @@ func (b *executorBuilder) buildInsert(v *plannercore.Insert) Executor {
 	var err error
 	// Hint: step II.1
 	// YOUR CODE HERE (lab4)
-	panic("YOUR CODE HERE")
+	// panic("YOUR CODE HERE")
+	err = ivs.initInsertColumns()
+	//
+
 	if err != nil {
 		b.err = err
 		return nil

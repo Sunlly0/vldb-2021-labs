@@ -45,7 +45,9 @@ func (e *InsertExec) exec(ctx context.Context, rows [][]types.Datum) error {
 		var err error
 		// Hint: step II.4
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		// panic("YOUR CODE HERE")
+		_, err = e.InsertValues.addRecord(ctx, row)
+		//
 		if err != nil {
 			return err
 		}
@@ -60,12 +62,16 @@ func (e *InsertExec) Next(ctx context.Context, req *chunk.Chunk) error {
 	if len(e.children) > 0 && e.children[0] != nil {
 		// Hint: step II.3.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		// panic("YOUR CODE HERE")
+		insertRowsFromSelect(ctx, e)
+		//
 		return err
 	}
 	// Hint: step II.3.1
 	// YOUR CODE HERE (lab4)
-	panic("YOUR CODE HERE")
+	// panic("YOUR CODE HERE")
+	insertRows(ctx, e)
+	//
 	return err
 }
 
@@ -84,7 +90,9 @@ func (e *InsertExec) Open(ctx context.Context) error {
 		var err error
 		// Hint: step II.2
 		// YOUR CODE HERE (lab4)
-		panic("YOUR CODE HERE")
+		// panic("YOUR CODE HERE")
+		err = e.SelectExec.Open(ctx)
+		//
 		return err
 	}
 	if !e.allAssignmentsAreConstant {

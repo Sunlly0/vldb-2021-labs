@@ -143,21 +143,21 @@ func NewSession(ctx context.Context, logPrefix string, etcdCli *clientv3.Client,
 			return etcdSession, errors.Trace(err)
 		}
 
-		if val, ok := failpoint.Eval(_curpkg_("closeClient")); ok {
+		failpoint.Inject("closeClient", func(val failpoint.Value) {
 			if val.(bool) {
 				if err := etcdCli.Close(); err != nil {
-					return etcdSession, errors.Trace(err)
+					failpoint.Return(etcdSession, errors.Trace(err))
 				}
 			}
-		}
+		})
 
-		if val, ok := failpoint.Eval(_curpkg_("closeGrpc")); ok {
+		failpoint.Inject("closeGrpc", func(val failpoint.Value) {
 			if val.(bool) {
 				if err := etcdCli.ActiveConnection().Close(); err != nil {
-					return etcdSession, errors.Trace(err)
+					failpoint.Return(etcdSession, errors.Trace(err))
 				}
 			}
-		}
+		})
 
 		etcdSession, err = concurrency.NewSession(etcdCli,
 			concurrency.WithTTL(ttl), concurrency.WithContext(ctx))

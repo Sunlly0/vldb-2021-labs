@@ -368,6 +368,10 @@ func (lr *LockResolver) resolveLock(bo *Backoffer, l *Lock, status TxnStatus, cl
 		lreq := &kvrpcpb.ResolveLockRequest{
 			StartVersion: l.TxnID,
 		}
+		// 如果事务状态为已提交，才会有提交版本
+		if status.IsCommitted() {
+			lreq.CommitVersion = status.CommitTS()
+		}
 		req := tikvrpc.NewRequest(tikvrpc.CmdResolveLock, lreq)
 		//
 

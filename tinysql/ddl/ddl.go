@@ -368,11 +368,11 @@ func (d *ddl) GetInfoSchemaWithInterceptor(ctx sessionctx.Context) infoschema.In
 func (d *ddl) genGlobalIDs(count int) ([]int64, error) {
 	var ret []int64
 	err := kv.RunInNewTxn(d.store, true, func(txn kv.Transaction) error {
-		if val, ok := failpoint.Eval(_curpkg_("mockGenGlobalIDFail")); ok {
+		failpoint.Inject("mockGenGlobalIDFail", func(val failpoint.Value) {
 			if val.(bool) {
-				return errors.New("gofail genGlobalIDs error")
+				failpoint.Return(errors.New("gofail genGlobalIDs error"))
 			}
-		}
+		})
 
 		m := meta.NewMeta(txn)
 		var err error

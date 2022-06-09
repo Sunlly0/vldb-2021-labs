@@ -30,11 +30,11 @@ import (
 )
 
 func onCreateTable(d *ddlCtx, t *meta.Meta, job *model.Job) (ver int64, _ error) {
-	if val, ok := failpoint.Eval(_curpkg_("mockExceedErrorLimit")); ok {
+	failpoint.Inject("mockExceedErrorLimit", func(val failpoint.Value) {
 		if val.(bool) {
-			return ver, errors.New("mock do job error")
+			failpoint.Return(ver, errors.New("mock do job error"))
 		}
-	}
+	})
 
 	schemaID := job.SchemaID
 	tbInfo := &model.TableInfo{}

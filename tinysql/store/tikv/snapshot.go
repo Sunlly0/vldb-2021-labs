@@ -99,11 +99,11 @@ func (s *tikvSnapshot) get(bo *Backoffer, k kv.Key) ([]byte, error) {
 		}
 	}
 
-	if _, ok := failpoint.Eval(_curpkg_("snapshot-get-cache-fail")); ok {
+	failpoint.Inject("snapshot-get-cache-fail", func(_ failpoint.Value) {
 		if bo.ctx.Value("TestSnapshotCache") != nil {
 			panic("cache miss")
 		}
-	}
+	})
 
 	cli := clientHelper{
 		LockResolver:      s.store.lockResolver,
@@ -189,12 +189,12 @@ func extractLockFromKeyErr(keyErr *pb.KeyError) (*Lock, error) {
 }
 
 func extractKeyErr(keyErr *pb.KeyError) error {
-	if val, ok := failpoint.Eval(_curpkg_("ErrMockRetryableOnly")); ok {
+	failpoint.Inject("ErrMockRetryableOnly", func(val failpoint.Value) {
 		if val.(bool) {
 			keyErr.Conflict = nil
 			keyErr.Retryable = "mock retryable error"
 		}
-	}
+	})
 
 	if keyErr.Conflict != nil {
 		return newWriteConflictError(keyErr.Conflict)

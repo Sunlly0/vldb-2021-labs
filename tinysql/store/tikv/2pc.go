@@ -25,6 +25,7 @@ import (
 	"github.com/pingcap/errors"
 	"github.com/pingcap/failpoint"
 	"github.com/pingcap/tidb/kv"
+	"github.com/pingcap/tidb/parser/terror"
 	"github.com/pingcap/tidb/store/tikv/tikvrpc"
 	"github.com/pingcap/tidb/tablecodec"
 	"github.com/pingcap/tidb/util/logutil"
@@ -135,9 +136,9 @@ func (c *twoPhaseCommitter) initKeysAndMutations() error {
 			// YOUR CODE HERE (lab3).
 			// panic("YOUR CODE HERE")
 			//put 操作
-			// if tablecodec.IsUntouchedIndexKValue(k, v) {
-			// 	return nil
-			// }
+			if tablecodec.IsUntouchedIndexKValue(k, v) {
+				return nil
+			}
 			mutations[string(k)] = &mutationEx{
 				Mutation: pb.Mutation{
 					Op:    pb.Op_Put,
@@ -145,9 +146,9 @@ func (c *twoPhaseCommitter) initKeysAndMutations() error {
 					Value: v,
 				},
 			}
-			fmt.Println("initKeysAndMutations: mutations:", mutations[string(k)])
+			// fmt.Println("initKeysAndMutations: mutations:", mutations[string(k)])
 			putCnt++
-			fmt.Println("putCnt:", putCnt)
+			// fmt.Println("putCnt:", putCnt)
 			//
 
 		} else {
@@ -168,9 +169,9 @@ func (c *twoPhaseCommitter) initKeysAndMutations() error {
 		// panic("YOUR CODE HERE")
 		keys = append(keys, k)
 		entrySize := len(k) + len(v)
-		// if entrySize > kv.TxnEntrySizeLimit {
-		// 	return kv.ErrEntryTooLarge.GenWithStackByArgs(kv.TxnEntrySizeLimit, entrySize)
-		// }
+		if entrySize > kv.TxnEntrySizeLimit {
+			return kv.ErrEntryTooLarge.GenWithStackByArgs(kv.TxnEntrySizeLimit, entrySize)
+		}
 		size += entrySize
 		return nil
 		//
@@ -318,7 +319,7 @@ func (c *twoPhaseCommitter) doActionOnKeys(bo *Backoffer, action twoPhaseCommitA
 		batches = batches[1:]
 	}
 	if actionIsCommit {
-		fmt.Println("doActionOnKey:actikonIsCommit")
+		// fmt.Println("doActionOnKey:actikonIsCommit")
 		// Commit secondary batches in background goroutine to reduce latency.
 		// The backoffer instance is created outside of the goroutine to avoid
 		// potential data race in unit test since `CommitMaxBackoff` will be updated
@@ -331,10 +332,10 @@ func (c *twoPhaseCommitter) doActionOnKeys(bo *Backoffer, action twoPhaseCommitA
 					zap.Uint64("conn", c.connID),
 					zap.Stringer("action type", action),
 					zap.Error(e))
-				fmt.Println("2PC async doActionOnBatches",
-					zap.Uint64("conn:", c.connID),
-					zap.Stringer("action type:", action),
-					zap.Error(e))
+				// fmt.Println("2PC async doActionOnBatches",
+				// 	zap.Uint64("conn:", c.connID),
+				// 	zap.Stringer("action type:", action),
+				// 	zap.Error(e))
 			}
 		}()
 	} else {
@@ -346,14 +347,14 @@ func (c *twoPhaseCommitter) doActionOnKeys(bo *Backoffer, action twoPhaseCommitA
 // doActionOnBatches does action to batches in parallel.
 func (c *twoPhaseCommitter) doActionOnBatches(bo *Backoffer, action twoPhaseCommitAction, batches []batchKeys) error {
 	if len(batches) == 0 {
-		fmt.Println("doActionOnBatches: action:", action.String())
-		fmt.Println("doActionOnBatches: len(batches)==0")
+		// fmt.Println("doActionOnBatches: action:", action.String())
+		// fmt.Println("doActionOnBatches: len(batches)==0")
 		return nil
 	}
 
 	if len(batches) == 1 {
-		fmt.Println("doActionOnBatches: action:", action.String())
-		fmt.Println("doActionOnBatches: len(batches)==", len(batches))
+		// fmt.Println("doActionOnBatches: action:", action.String())
+		// fmt.Println("doActionOnBatches: len(batches)==", len(batches))
 		e := action.handleSingleBatch(c, bo, batches[0])
 		if e != nil {
 			logutil.BgLogger().Debug("2PC doActionOnBatches failed",
@@ -361,16 +362,16 @@ func (c *twoPhaseCommitter) doActionOnBatches(bo *Backoffer, action twoPhaseComm
 				zap.Stringer("action type", action),
 				zap.Error(e),
 				zap.Uint64("txnStartTS", c.startTS))
-			fmt.Println("2PC doActionOnBatches failed",
-				zap.Uint64("conn", c.connID),
-				zap.Stringer("action type", action),
-				zap.Error(e),
-				zap.Uint64("txnStartTS", c.startTS))
+			// fmt.Println("2PC doActionOnBatches failed",
+			// 	zap.Uint64("conn", c.connID),
+			// 	zap.Stringer("action type", action),
+			// 	zap.Error(e),
+			// 	zap.Uint64("txnStartTS", c.startTS))
 		}
 		return errors.Trace(e)
 	}
-	fmt.Println("doActionOnBatches: action:", action.String())
-	fmt.Println("doActionOnBatches: len(batches)==", len(batches))
+	// fmt.Println("doActionOnBatches: action:", action.String())
+	// fmt.Println("doActionOnBatches: len(batches)==", len(batches))
 	rateLim := len(batches)
 	// Set rateLim here for the large transaction.
 	// If the rate limit is too high, tikv will report service is busy.
@@ -518,16 +519,16 @@ func (actionCommit) handleSingleBatch(c *twoPhaseCommitter, bo *Backoffer, batch
 	// an error (may lead to the duplicated key error when upper level restarts the transaction). Currently the best
 	// solution is to populate this error and let upper layer drop the connection to the corresponding mysql client.
 	isPrimary := bytes.Equal(batch.keys[0], c.primary())
-	fmt.Println("actionCommit:isPrimary", isPrimary)
+	// fmt.Println("actionCommit:isPrimary", isPrimary)
 	if isPrimary && sender.rpcError != nil {
 		c.setUndeterminedErr(errors.Trace(sender.rpcError))
 	}
 
-	if _, ok := failpoint.Eval(_curpkg_("mockFailAfterPK")); ok {
+	failpoint.Inject("mockFailAfterPK", func() {
 		if !isPrimary {
 			err = errors.New("commit secondary keys error")
 		}
-	}
+	})
 	if err != nil {
 		return errors.Trace(err)
 	}
@@ -535,6 +536,25 @@ func (actionCommit) handleSingleBatch(c *twoPhaseCommitter, bo *Backoffer, batch
 	// handle the response and error refer to actionPrewrite.handleSingleBatch
 	// YOUR CODE HERE (lab3).
 	// panic("YOUR CODE HERE")
+	regionErr, err := resp.GetRegionError()
+	if err != nil {
+		return errors.Trace(err)
+	}
+	if regionErr != nil {
+		// The region info is read from region cache,
+		// so the cache miss cases should be considered
+		// You need to handle region errors here
+		err = bo.Backoff(BoRegionMiss, errors.New(regionErr.String()))
+		if err != nil {
+			return errors.Trace(err)
+		}
+		// re-split keys and commit again.
+		err = c.commitKeys(bo, batch.keys)
+		return errors.Trace(err)
+	}
+	if resp.Resp == nil {
+		return errors.Trace(ErrBodyMissing)
+	}
 	commitResp := resp.Resp.(*pb.CommitResponse)
 	// Here we can make sure tikv has processed the commit primary key request. So
 	// we can clean undetermined error.
@@ -658,14 +678,14 @@ func (c *twoPhaseCommitter) execute(ctx context.Context) (err error) {
 					logutil.Logger(ctx).Info("2PC cleanup failed",
 						zap.Error(err),
 						zap.Uint64("txnStartTS", c.startTS))
-					fmt.Print("2PC cleanup failed",
-						zap.Error(err),
-						zap.Uint64("txnStartTS", c.startTS))
+					// fmt.Print("2PC cleanup failed",
+					// 	zap.Error(err),
+					// 	zap.Uint64("txnStartTS", c.startTS))
 				} else {
 					logutil.Logger(ctx).Info("2PC clean up done",
 						zap.Uint64("txnStartTS", c.startTS))
-					fmt.Print("2PC clean up done",
-						zap.Uint64("txnStartTS", c.startTS))
+					// fmt.Print("2PC clean up done",
+					// 	zap.Uint64("txnStartTS", c.startTS))
 				}
 				//
 				c.cleanWg.Done()
@@ -674,7 +694,7 @@ func (c *twoPhaseCommitter) execute(ctx context.Context) (err error) {
 		c.txn.commitTS = c.commitTS
 	}()
 
-	fmt.Println("begin execute:")
+	// fmt.Println("begin execute:")
 
 	// prewrite phase
 	prewriteBo := NewBackoffer(ctx, PrewriteMaxBackoff).WithVars(c.txn.vars)
@@ -683,7 +703,13 @@ func (c *twoPhaseCommitter) execute(ctx context.Context) (err error) {
 	// panic("YOUR CODE HERE")
 	err = c.prewriteKeys(prewriteBo, c.keys)
 	if err != nil {
-		fmt.Println("execute error")
+		logutil.Logger(ctx).Debug("2PC failed on prewrite",
+			zap.Error(err),
+			zap.Uint64("txnStartTS", c.startTS))
+		// fmt.Print("2PC failed on prewrite",
+		// 	zap.Error(err),
+		// 	zap.Uint64("txnStartTS", c.startTS))
+		// fmt.Println("execute error")
 		return errors.Trace(err)
 	}
 	//
@@ -729,8 +755,24 @@ func (c *twoPhaseCommitter) execute(ctx context.Context) (err error) {
 	// panic("YOUR CODE HERE")
 	err = c.commitKeys(commitBo, c.keys)
 	if err != nil {
-		fmt.Println("execute error")
-		return errors.Trace(err)
+		// fmt.Println("execute error")
+		// return errors.Trace(err)
+		undeterminedErr := c.getUndeterminedErr()
+		// 存在未知错误
+		if undeterminedErr != nil {
+			logutil.Logger(ctx).Error("2PC commit result undetermined",
+				zap.Error(err),
+				zap.NamedError("rpcErr", undeterminedErr),
+				zap.Uint64("txnStartTS", c.startTS))
+			err = errors.Trace(terror.ErrResultUndetermined)
+		}
+		// 提交失败
+		if !c.mu.committed {
+			logutil.Logger(ctx).Debug("2PC failed on commit",
+				zap.Error(err),
+				zap.Uint64("txnStartTS", c.startTS))
+			return errors.Trace(err)
+		}
 	}
 	//
 	return nil
@@ -831,7 +873,7 @@ func (batchExe *batchExecutor) startWorker(exitCh chan struct{}, ch chan error, 
 
 // process will start worker routine and collect results
 func (batchExe *batchExecutor) process(batches []batchKeys) error {
-	fmt.Println("begin batchExecutor:")
+	// fmt.Println("begin batchExecutor:")
 	var err error
 	err = batchExe.initUtils()
 	if err != nil {
